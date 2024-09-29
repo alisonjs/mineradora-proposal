@@ -1,7 +1,9 @@
 package org.br.mineradora.service;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.br.mineradora.dto.ProposalDTO;
 import org.br.mineradora.dto.ProposalDetailsDTO;
@@ -11,6 +13,7 @@ import org.br.mineradora.repository.ProposalRepository;
 import org.modelmapper.ModelMapper;
 
 @Slf4j
+@ApplicationScoped
 public class ProposalServiceImpl implements ProposalService{
 
     @Inject
@@ -24,9 +27,13 @@ public class ProposalServiceImpl implements ProposalService{
     @Override
     public ProposalDetailsDTO findFullProposal(long id) {
         ProposalEntity proposalEntity = proposalRepository.findById(id);
+        if(proposalEntity == null) {
+            throw new NotFoundException("Not found Proposal with id " + id);
+        }
         return modelMapper.map(proposalEntity, ProposalDetailsDTO.class);
     }
 
+    @Transactional
     @Override
     public void createNewProposal(ProposalDetailsDTO proposalDetailsDTO) {
         ProposalDTO proposal = buildAndSaveNewProposal(proposalDetailsDTO);
@@ -36,10 +43,11 @@ public class ProposalServiceImpl implements ProposalService{
     @Transactional
     @Override
     public void removeProposal(long id) {
-        proposalRepository.deleteById(id);
+        if(!proposalRepository.deleteById(id)){
+            throw new NotFoundException("Not found Proposal with id " + id);
+        }
     }
 
-    @Transactional
     private ProposalDTO buildAndSaveNewProposal(ProposalDetailsDTO proposalDetailsDTO) {
 
         try {
